@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ms. Mia's English Class - Interactive Stories</title>
+    <style>
+        :root {
+            --bg-color: #fdf5e6;
+            --accent-color: #ff9a9e;
+            --text-color: #4a4a4a;
+            --highlight-color: #fff176;
+            --button-bg: #ffffff;
+            --active-button: #8ed1fc;
+            --shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(#ffe4b5 10%, transparent 10%),
+                linear-gradient(135deg, #fdf5e6 0%, #ffecd2 100%);
+            background-size: 30px 30px, 100% 100%;
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Sidebar Navigation */
+        #sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(10px);
+            border-right: 2px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        #logo-container {
+            position: sticky;
+            top: 0;
+            padding: 20px 10px;
+            text-align: center;
+            background: transparent;
+        }
+
+        #logo-container img {
+            max-width: 160px;
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05));
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            color: #d4a373;
+            text-align: center;
+            margin: 5px 0 15px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #button-list-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 15px 20px 15px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .story-btn {
+            width: 100%;
+            background: var(--button-bg);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-color);
+            transition: all 0.2s ease;
+            text-align: left;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .story-btn.active {
+            background: var(--active-button);
+            color: white;
+            border-color: #0693e3;
+        }
+
+        /* Main Reading Area */
+        #main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+            overflow-y: auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .instruction {
+            text-align: center;
+            font-weight: bold;
+            color: #b5835a;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        #reading-box {
+            background: rgba(255, 255, 255, 0.92);
+            flex: 1;
+            border-radius: 35px;
+            padding: 40px;
+            box-shadow: var(--shadow);
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            line-height: 2;
+            font-size: 1.8rem;
+            overflow-y: auto;
+            border: 6px solid rgba(255, 255, 255, 0.6);
+        }
+
+        /* Container for each sentence block */
+        .sentence-line {
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .word-node {
+            display: inline;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .normal-word {
+            display: inline-block;
+            cursor: pointer;
+            padding: 0 2px;
+            border-radius: 4px;
+            transition: background 0.1s;
+        }
+
+        /* Updated Style: NO bold for underlined words */
+        .interactive-word {
+            color: var(--text-color);
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            text-decoration-color: #ffca28;
+            text-decoration-thickness: 3px;
+            cursor: pointer;
+            padding: 0 2px;
+            border-radius: 4px;
+            transition: background 0.1s;
+            font-weight: normal;
+            display: inline-block;
+        }
+
+        .normal-word.playing, .interactive-word.playing {
+            background: var(--highlight-color) !important;
+        }
+
+        .viet-hint {
+            display: none;
+            font-size: 1.4rem;
+            color: #ff6d00;
+            font-style: italic;
+            background: #fff8f1;
+            border: 1px dashed #ffd1b3;
+            padding: 1px 6px;
+            border-radius: 6px;
+            margin-left: 4px;
+            margin-right: 4px;
+            font-weight: normal;
+        }
+
+        .viet-hint.reveal {
+            display: inline-block;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(2px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 30vh;
+                border-right: none;
+                border-bottom: 2px solid white;
+            }
+            #logo-container { padding: 8px; }
+            #logo-container img { max-width: 90px; }
+            h2 { font-size: 0.9rem; margin: 0 0 5px 0; }
+            #button-list-wrapper {
+                display: flex;
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 8px;
+                gap: 8px;
+            }
+            .story-btn {
+                width: auto;
+                white-space: nowrap;
+                margin-bottom: 0;
+                padding: 6px 10px;
+                font-size: 0.85rem;
+            }
+            #main-content { padding: 12px; }
+            #reading-box { font-size: 1.4rem; padding: 20px; border-radius: 20px; }
+            .sentence-line { margin-bottom: 8px; }
+            .viet-hint { font-size: 1.1rem; }
+            .instruction { font-size: 0.85rem; margin-bottom: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav id="sidebar">
+        <div id="logo-container">
+            <img src="logo.png" alt="Logo">
+        </div>
+        <!-- Updated Header Title -->
+        <h2>Starters Reading Extra</h2>
+        <div id="button-list-wrapper">
+            <div id="button-list"></div>
+        </div>
+    </nav>
+
+    <main id="main-content">
+        <div class="instruction">📱 Tap / 💻 Click any word to hear pronunciation! Underlined words reveal definitions.</div>
+        <div id="reading-box"></div>
+    </main>
+
+    <script>
+        // Story Data Source (Matches user summary context of reading materials)
+        const stories = [
+            { title: "1. MY CAT", text: "I have a small cat. Her name (name: tên) is Mimi. Mimi is black and white. She likes milk and fish. Every morning she sits near my chair. She looks (looks: nhìn) at me with big eyes. I give her food and water. Then she runs to the garden. She plays with a red ball and sleeps in the sun. I like my cat very much." },
+
+{ title: "2. MY SCHOOL BAG", text: "This is my school bag. It is blue and big. I put my book, pencil, ruler, and rubber in it. My lunch box is in the front (front: phía trước) pocket. I carry (carry: mang) my bag every day. It is not heavy (heavy: nặng). My bag has one zip and two small pockets. I like my bag because it is useful (useful: hữu ích) and nice." },
+
+{ title: "3. A RAINY DAY", text: "Today it is rainy. The sky is grey and the road (road: con đường) is wet. I wear my coat and boots. I take my umbrella and go outside (outside: bên ngoài). My friend Tom walks with me. We do not play in the park. We sit at home and drink hot tea (tea: trà). I look (look: nhìn) out of the window and see (see: thấy) many small drops (drops: những giọt) of rain. It is a quiet (quiet: yên tĩnh) day." },
+
+{ title: "4. MY FAMILY DINNER", text: "My family has dinner at six o’clock (o’clock: giờ). My mother cooks (cooks: nấu) rice, chicken, and soup. My father puts the plates (plates: những chiếc đĩa) on the table. My sister helps too. We all sit together (together: cùng nhau) and talk (talk: nói chuyện). My little brother eats his food slowly (slowly: một cách chậm chạp). After dinner, we wash (wash: rửa) the dishes (dishes: chén bát). I like dinner time because my family is happy and together." },
+
+{ title: "5. AT THE FARM", text: "We go to the farm on Sunday. I see (see: thấy) a cow, two sheep, and a horse. The cow eats grass. The sheep are white and soft. The horse is brown and fast. I give carrots to a rabbit. There are ducks near (near: gần) the water. I like the farm because the animals are friendly (friendly: thân thiện) and the air (air: không trung) is fresh (fresh: trong lành)." },
+
+{ title: "6. MY BEDROOM", text: "My bedroom is small but nice. I have a bed, a desk, and a chair. My books are on the shelf (shelf: kệ). My toy car is under the bed. The walls are yellow. At night I close the window and sleep well (well: tốt/ngon). In the morning the sun comes in. I like my bedroom because it is my own (own: riêng mình) place (place: nơi ở)." },
+
+{ title: "7. THE LOST BALL", text: "Ben has a new ball. It is red and yellow. He plays with it in the park. The ball rolls (rolls: lăn) away and goes under a tree. Ben cannot find (find: tìm) it. His sister helps him look (look: nhìn/tìm). At last (last: cuối cùng), they see (see: thấy) it behind a box. Ben is very happy. He takes the ball and plays again (again: lần nữa) with his friends." },
+
+{ title: "8. A DAY AT THE BEACH", text: "We go to the beach in the morning. The sea is blue and the sand is warm (warm: ấm). My brother makes a sand castle (sand castle: lâu đài cát). My mother sits under an umbrella. I collect (collect: thu gom/nhặt) shells (shells: vỏ sò) and look (look: nhìn) at the boats (boats: những con thuyền). We eat sandwiches (sandwiches: bánh mì kẹp) and drink water. In the afternoon we swim in the sea (sea: biển). It is a fun day." },
+
+{ title: "9. MY PET FISH", text: "I have a pet fish. His name (name: tên) is Goldie. He lives in a small tank (tank: bể/hồ). He is orange and gold. I feed (feed: cho ăn) him every day. He swims fast and turns (turns: quay) around. He does not like noise (noise: tiếng ồn). I talk (talk: nói chuyện) to him when I clean (clean: lau chùi/làm sạch) the tank (tank: bể cá). I like Goldie because he is small, quiet, and beautiful." },
+
+{ title: "10. THE BIRTHDAY PARTY", text: "Today is Anna’s birthday. She wears a pretty (pretty: xinh đẹp) dress. Her friends come to her house with cards (cards: những tấm thiệp) and presents (presents: quà tặng). There is a big cake on the table. They sing songs and laugh (laugh: cười). Anna opens her gifts (gifts: món quà) and says thank you. They eat cake and drink juice (juice: nước trái cây). Everyone has a good time at the party." },
+
+{ title: "11. MY MORNING", text: "I wake up (wake up: thức dậy) early (early: sớm). I get out of bed and open the window. The sun is bright (bright: tươi sáng). I wash (wash: rửa) my face (face: khuôn mặt) and brush my teeth (teeth: răng). Then I put on my clothes and eat breakfast (breakfast: bữa sáng). I drink milk and eat bread. After that, I take my bag and go to school. My morning is busy (busy: bận rộn), but I like it." },
+
+{ title: "12. IN THE GARDEN", text: "My grandfather has a garden. There are flowers, trees, and vegetables (vegetables: rau củ). I see (see: thấy) red flowers, green leaves, and small bees. My grandfather waters (waters: tưới nước) the plants (plants: cây cối) every day. I help him pick (pick: hái) tomatoes. A bird sits on the fence (fence: hàng rào) and sings. We work in the garden and feel happy. The garden looks clean (clean: sạch sẽ) and beautiful." },
+
+{ title: "13. THE LITTLE KITE", text: "On Saturday, I fly a kite with my brother. The kite is blue and has a long tail (tail: cái đuôi). The wind is strong (strong: mạnh), and the kite goes high (high: cao) in the sky. We run and laugh (laugh: cười). The string (string: sợi dây) is in my hand. The kite moves (moves: di chuyển) left and right. I love flying my kite on a windy (windy: có gió) day." },
+
+{ title: "14. MY CLASSROOM", text: "My classroom is bright (bright: sáng sủa) and clean (clean: sạch sẽ). There are many desks and chairs. The teacher writes (writes: viết) on the board (board: cái bảng). We have books, pencils, and maps (maps: bản đồ). I sit near my friend. We listen (listen: lắng nghe), read, and write (write: viết). There is a clock on the wall. I like my classroom because I learn (learn: học) new things every day." },
+
+{ title: "15. THE SMALL PUPPY", text: "A small puppy (puppy: chó con) lives near my house. He is brown and white. He likes to run and jump. He plays with a ball and follows (follows: đi theo) children. Sometimes he sleeps on the grass. I give him water and a little food. He wags (wags: vẫy) his tail (tail: đuôi) when he sees (sees: thấy) me. The puppy is funny (funny: vui nhộn) and sweet (sweet: dễ thương)." },
+
+{ title: "16. MY LUNCH BOX", text: "I have a green lunch box. My mother puts rice, egg, and fruit inside (inside: bên trong) it. I take it to school every day. At lunch time (time: thời gian), I open it and eat with my friends. My lunch box is easy (easy: dễ dàng) to carry (carry: mang). I like the food in it because it tastes (tastes: có vị) good and keeps (keeps: giữ) me strong (strong: khỏe mạnh)." },
+
+{ title: "17. THE OLD TREE", text: "There is an old (old: già/cổ thụ) tree near my home. It is tall (tall: cao) and wide (wide: rộng). In summer, it gives cool shade (shade: bóng râm). Children sit under it and read books. Birds make nests (nests: tổ) in its branches (branches: cành cây). In the wind, the leaves move softly (softly: nhẹ nhàng). I like the old tree because it is quiet and beautiful." },
+
+{ title: "18. A SUNNY AFTERNOON", text: "This afternoon is sunny and warm (warm: ấm áp). My sister and I go to the park. We ride our bikes and play on the swings (swings: xích đu). We see (see: thấy) a boy with a kite and a girl with a ball. We eat ice cream and drink water. Then we sit on the grass and rest (rest: nghỉ ngơi). It is a very nice afternoon." },
+
+{ title: "19. THE MISSING PEN", text: "Tom has a new pen. It is blue and black. He puts it on his desk before (before: trước) class (class: buổi học, lớp học). After the lesson (lesson: bài học), the pen is gone (gone: mất). Tom looks (looks: tìm) in his bag, under the desk, and in his pocket. At last (last: cuối cùng), he finds (finds: tìm thấy) it in his book. He smiles (smiles: mỉm cười) and says, “Oh, here it is!”" },
+
+{ title: "20. MY GRANDMOTHER", text: "My grandmother lives with us. She is kind (kind: tốt bụng) and funny (funny: vui nhộn). She likes tea, stories (stories: câu chuyện), and flowers. Every evening she sits in her chair and talks (talks: nói chuyện) to me. She tells (tells: kể) me about her school days. I help her carry (carry: mang) her bag and bring her water. I love my grandmother very much because she is always nice to me." },
+
+{ title: "21. THE SHOP", text: "I go to the shop (shop: cửa hàng) with my mother. We buy apples, bread, milk, and eggs. The shop is small but clean (clean: sạch sẽ). The man at the counter (counter: quầy) smiles (smiles: mỉm cười) and says hello. My mother pays (pays: trả tiền) for the things. I carry a bag home. We put the food in the kitchen. I like going to the shop with my mother." },
+
+{ title: "22. MY TOY BOX", text: "My toy box is under my table. It is full (full: đầy) of toys. I have a teddy bear, a doll, a car, and a ball. The teddy bear is soft. The doll has a red dress. I play with my toys after school. Then I put them back (back: trở lại) in the box. My toy box helps me keep my room tidy (tidy: gọn gàng)." },
+
+{ title: "23. THE LITTLE BOAT", text: "I see (see: thấy) a little boat on the river (river: sông). It is white and blue. A man sits inside (inside: bên trong) and rows (rows: chèo) slowly (slowly: chậm). The water is calm (calm: yên lặng). Ducks swim near the boat. My friend and I watch from the bridge (bridge: cầu). The boat moves past (past: ngang qua) the trees and disappears (disappears: biến mất). It is very nice." },
+
+{ title: "24. MY HAPPY DOG", text: "My dog’s name (name: tên) is Spot. He is black and brown. He runs fast and likes to play. Every day I throw (throw: ném) a stick (stick: gậy) for him. He brings (brings: mang) it back. Spot sleeps outside (outside: bên ngoài) in a small house. He is noisy (noisy: ồn ào) when people come near the gate (gate: cổng). I like Spot because he is my good friend." },
+
+{ title: "25. A NEW BOOK", text: "I have a new book about animals. It has pictures (pictures: hình ảnh) of lions (lions: sư tử), monkeys, snakes (snakes: rắn), and birds. I read it after dinner. The words are easy and the pictures are bright. My favorite (favorite: yêu thích) page (page: trang) is about elephants (elephants: voi). They are big and strong (strong: khỏe mạnh). I learn (learn: học) new words (words: những từ vựng) from the book." },
+
+{ title: "26. THE CLEAN ROOM", text: "I clean (clean: dọn) my room on Sunday morning. I pick up (pick up: dọn) my clothes and put my books on the shelf (shelf: kệ). I make my bed and sweep (sweep: quét) the floor. My mother helps me. After that, the room looks tidy (tidy: gọn gàng). I can find (find: tìm thấy) my things easily (easily: dễ dàng). A clean room makes me happy." },
+
+{ title: "27. AT THE ZOO", text: "My class goes to the zoo. We see (see: thấy) a lion (lion: sư tử), a tiger (tiger: hổ), a monkey, and a giraffe (giraffe: hươu cao cổ). The giraffe has a long neck (neck: cổ). The monkeys climb (climb: leo) and jump. The lion sleeps in the sun. We walk slowly (slowly: chậm) and look at many animals. The zoo is exciting (exciting: thú vị)." },
+
+{ title: "28. MY RED BICYCLE", text: "I have a red bicycle (bicycle: xe đạp). It has two wheels (wheels: bánh xe), a bell, and a small basket. I ride it in the park with my cousin (cousin: anh chị em họ). We go fast and slow. I ring the bell and laugh. My father checks (checks: kiểm tra) the bike. I love my bicycle because it is fun." },
+
+{ title: "29. THE BUSY KITCHEN", text: "In the kitchen, my mother is busy (busy: bận). She cuts (cuts: cắt) vegetables and cooks soup. My father washes fruit and puts plates (plates: đĩa) on the table. I help carry spoons (spoons: thìa) and cups (cups: cốc). The kitchen smells good. We all work together (together: cùng nhau) and eat warm food later (later: sau đó)." },
+
+{ title: "30. MY NEW FRIEND", text: "At school, I meet (meet: gặp) a new boy. His name (name: tên) is Leo. He is kind (kind: tốt bụng). He likes football (football: bóng đá), pencils, and animals. We play together (together: cùng nhau). He sits next to (next to: bên cạnh) me. Leo smiles a lot and shares (shares: chia sẻ) his things. I am happy to have a new friend." },
+
+{ title: "31. THE STRONG WIND", text: "Today the wind is strong (strong: mạnh). The trees move and leaves fly in the air. I hold (hold: giữ) my hat because it almost (almost: gần như) blows (blows away: thổi bay) away. My sister laughs and runs. We stay near home. We watch clouds move quickly (quickly: nhanh) in the sky." },
+
+{ title: "32. MY FAVOURITE MEAL", text: "My favourite (favourite: yêu thích) meal is rice with chicken and vegetables. My mother cooks it on Friday. The food is hot and tasty (tasty: ngon). I eat slowly (slowly: chậm). We sit together (together: cùng nhau) and enjoy dinner. I always (always: luôn luôn) look forward to it." },
+
+{ title: "33. THE YELLOW UMBRELLA", text: "I have a yellow umbrella (umbrella: ô). It is bright (bright: sáng) and easy (easy: dễ thấy). I use it when it rains. It keeps me dry (dry: khô). One day, I share it with my friend. We walk home together (together: cùng nhau) in the rain." },
+
+{ title: "34. THE PICTURE", text: "I draw (draw: vẽ) a picture (picture: tranh) of my house. It has a door, two windows, and a tree. I use crayons (crayons: bút màu). My sister draws the sun and flowers. We show (show: cho xem) our pictures to our mother. She smiles and says they are beautiful." },
+
+{ title: "35. THE LITTLE TRAIN", text: "I see a little train at the station (station: nhà ga). It is red and white. It has many windows (windows: cửa sổ). People get on (get on: lên tàu). The train moves slowly (slowly: chậm) and goes away. I watch it go past (past: đi qua) the hill." },
+
+{ title: "36. MY COUSIN’S HOUSE", text: "My cousin lives near the river (river: sông). The house has a garden. We play there after school. His mother gives us juice and biscuits (biscuits: bánh quy). We talk and laugh. I like visiting his house." },
+
+{ title: "37. THE COLD DAY", text: "Today is cold (cold: lạnh). I wear a coat, scarf (scarf: khăn), and hat. My hands are cold. At school, we drink warm tea. The sky is grey but the room is warm. I go home and sit with my mother." },
+
+{ title: "38. MY PENCIL CASE", text: "My pencil case (pencil case: hộp bút) is purple. It has a zip (zip: khóa). Inside (inside: bên trong), I keep pencils, pen, ruler, and rubber. I use it every day. It helps me keep things together (together: cùng nhau)." },
+
+{ title: "39. THE CAT AND THE BALL", text: "A cat sees (sees: thấy) a green ball. It touches (touches: chạm) the ball. The ball rolls (rolls: lăn) under the chair. The cat jumps and plays. It is a simple (simple: đơn giản) game." },
+
+{ title: "40. A WALK TO SCHOOL", text: "I walk to school with my sister. We pass (pass: đi qua) shops and a park. We see cars and bikes. We talk on the way. At school, we say goodbye (goodbye: tạm biệt). I like walking together." },
+
+{ title: "41. THE BIG BOX", text: "My father brings home a big box (box: cái hộp). We do not know (know: biết) what is inside (inside: bên trong). My brother and I open (open: mở) it carefully (carefully: cẩn thận). Inside is a new game. We jump and cheer (cheer: reo hò). My father laughs and says it is for all of us. It is a wonderful surprise (wonderful surprise: sự ngạc nhiên tuyệt vời)." },
+
+{ title: "42. THE ORANGE TREE", text: "There is an orange tree in our yard (yard: sân). In spring (spring: mùa xuân), it has small white flowers. Later, there are many oranges. They are round (round: tròn), bright, and sweet. My mother picks (picks: hái) some fruit for breakfast. Birds sit in the branches (branches: cành cây). I like the orange tree because it gives us fruit and shade (shade: bóng râm)." },
+
+{ title: "43. MY SCHOOL DAY", text: "I go to school in the morning. First, I put my bag on my desk. Then I read, write (write: viết), and listen to (listen to: lắng nghe) the teacher. At break time (break time: giờ ra chơi), I play with my friends. We eat snacks and drink water. In the afternoon, I finish (finish: hoàn thành) my work and go home. School days are busy and interesting (interesting: thú vị)." },
+
+{ title: "44. THE SMALL MARKET", text: "Near my house, there is a small market (market: chợ). People buy fruit, vegetables, fish, and bread. The sellers (sellers: người bán hàng) are friendly (friendly: thân thiện) and loud (loud: ồn ào). I go there with my aunt (aunt: dì/cô) on Saturday. We choose (choose: chọn) bananas, rice, and eggs. I like the market because it has many things and many people." },
+
+{ title: "45. MY LITTLE SISTER", text: "My little sister is three years old (years old: tuổi). She likes dolls, songs, and bright colours. She can run, jump, and laugh (laugh: cười). Sometimes she makes a mess (mess: sự bừa bộn), but that is okay. She holds (holds: nắm/giữ) my hand. I help her with her shoes and toys. I love my little sister very much." },
+
+{ title: "46. THE BOAT TRIP", text: "We take a boat trip (boat trip: chuyến đi bằng thuyền) on the lake. The water is blue and calm (calm: êm đềm). My father rows (rows: chèo) the boat slowly (slowly: chậm rãi). My mother looks at (looks at: nhìn) the birds. I sit in the middle (middle: giữa) and smile (smile: mỉm cười). We see fish in the water and trees on the shore (shore: bờ)." },
+
+{ title: "47. THE BROKEN KITE", text: "My kite is new and green. I fly it in the park with my friends. The wind is strong (strong: mạnh), and the kite goes high (high: cao). Then the string (string: sợi dây) breaks (breaks: đứt). The kite flies away over the trees. I feel sad, but my friend says we can make another (another: nữa, khác) one. I smile again." },
+
+{ title: "48. MY FAVOURITE COLOUR", text: "My favourite (favourite: yêu thích) colour is blue. I like blue sky, blue water, and blue clothes. My bag is blue, and my pencil case is blue too. Blue makes me feel calm (calm: bình yên) and happy. When I draw pictures, I often use crayons (crayons: bút màu sáp)." },
+
+{ title: "49. THE BUSY STREET", text: "The street (street: con phố) near my school is busy (busy: nhộn nhịp). There are cars, buses, bikes, and people. A man sells (sells: bán) fruit on the corner (corner: góc phố). Children cross (cross: băng qua) the road (road: con đường) with their parents (parents: ba mẹ). I look both (both: cả hai) ways (ways: hướng đi) before I walk. The street is noisy (noisy: ồn ào), but full of life (life: cuộc sống, sức sống)." },
+
+{ title: "50. MY SPECIAL DAY", text: "Today is a special (special: đặc biệt) day. My teacher gives me a star (star: ngôi sao) because I read well. My mother makes my favourite food. My father smiles and gives me a small present (present: quà). In the evening, we eat cake and talk together. I feel happy and proud (proud: tự hào)." },
+
+{ title: "51. MY MORNING WALK", text: "Every morning (morning: buổi sáng), I walk to school with my father. We leave (leave: rời khỏi) home at seven o’clock (o’clock: giờ). I see (see: thấy) trees, cars, and children on the road (road: con đường). The air (air: không khí) is fresh (fresh: trong lành) and cool. My father carries (carries: mang) his umbrella. I carry (carry: mang) my school bag. We talk (talk: nói chuyện) about the weather (weather: thời tiết) and our day. I like (like: thích) my morning (morning: buổi sáng) walk very much." },
+
+{ title: "52. THE SMALL RABBIT", text: "My aunt has a small rabbit. It is white and very soft. It likes carrots and lettuce. The rabbit lives (lives: sống) in a clean cage (cage: cái lồng) in the garden. Every day I give it water. It jumps and runs when it sees (sees: thấy) me. I like (like: thích) to watch (watch: ngắm) it because it is quick (quick: nhanh nhẹn) and funny (funny: vui nhộn)." },
+
+{ title: "53. AT THE POST OFFICE", text: "I go to the post (post: bưu điện) office with my mother. She sends (sends: gửi) a letter to my grandmother. We stand (stand: đứng) in a line and wait. The man (man: người đàn ông) at the desk (desk: bàn làm việc) gives my mother a stamp (stamp: con tem). I look (look: nhìn) at the boxes and the envelopes. My mother smiles when she finishes (finishes: kết thúc). Then we go home together (together: cùng nhau)." },
+
+{ title: "54. THE RAINY UMBRELLA", text: "It starts to rain when I am in the park. I open my umbrella quickly (quickly: nhanh chóng). My friend has no umbrella, so I share (share: chia sẻ) mine. We walk slowly (slowly: chậm rãi) and laugh. The rain makes the grass wet and green. We see (see: thấy) puddles (puddles: vũng nước) on the road (road: con đường). I like (like: thích) rainy days when I can use my bright (bright: rực rỡ) umbrella." },
+
+{ title: "55. MY TOY TRAIN", text: "I have a toy train on my shelf (shelf: kệ). It is blue and yellow. The train has three small cars (cars: toa tàu). I play with it after lunch. My brother pushes (pushes: đẩy) it on the floor. We make train sounds (sounds: âm thanh) and laugh. Then we put it back (back: trở lại) in the box. I like (like: thích) my toy train because it is fun." },
+
+{ title: "56. THE FRUIT BASKET", text: "There is a basket (basket: cái giỏ) of fruit on the table. It has apples, bananas, oranges, and grapes. My mother buys (buys: mua) the fruit at the market. I wash the apples and help carry (carry: mang) the basket (basket: cái giỏ). We eat some fruit after dinner. The fruit is sweet and healthy (healthy: tốt cho sức khỏe). I like (like: thích) the fruit basket in our kitchen." },
+
+{ title: "57. MY SCHOOL SHOES", text: "My school shoes are black and clean. I wear them every day. They are small but comfortable (comfortable: thoải mái). My mother helps me tie (tie: buộc) the laces (laces: dây giày). I walk, run, and play in them. After school, I put them near the door. I like (like: thích) my shoes because they are good for school and play." },
+
+{ title: "58. THE LITTLE DUCK", text: "A little duck swims in the pond. It is yellow and cute (cute: đáng yêu). It moves (moves: di chuyển) on the water very fast. Other ducks swim near it. I throw small pieces (pieces: những miếng) of bread carefully (carefully: cẩn thận). The duck eats and looks (looks: nhìn) at me. I smile because it is a happy bird. I like (like: thích) to see (see: thấy) ducks in the park." },
+
+{ title: "59. MY FATHER’S HAT", text: "My father has a brown hat. He wears (wears: đội/mặc) it when he works (works: làm việc) outside. The hat keeps (keeps: giữ) the sun away from his face (face: khuôn mặt). I like (like: thích) to put it on my head, but it is too big. My father laughs when he sees (sees: thấy) me. His hat is old, but he still (still: vẫn) likes (likes: thích) it very much." },
+
+{ title: "60. THE SCHOOL BELL", text: "The bell (bell: cái chuông) rings (rings: reo) at school. It is time for class. We sit down quickly (quickly: nhanh chóng) and open our books. The teacher comes in and says good morning. We listen (listen: lắng nghe) carefully (carefully: cẩn thận). The bell (bell: cái chuông) rings (rings: reo) again at break time. We run outside and play. The school bell (bell: cái chuông) tells (tells: bảo) us when to work and when to play." },
+
+{ title: "61. A BIG CAKE", text: "Today my mother makes a big cake. It has chocolate on top (top: phần trên). My sister puts some candles (candles: nến) on it. We sing a song and clap (clap: vỗ tay) our hands. Then we eat the cake with tea. It tastes (tastes: có vị) sweet and soft. My mother smiles because we are happy. The cake is the best part (best part: phần tuyệt nhất) of the day." },
+
+{ title: "62. THE SMALL SHOP", text: "There is a small shop near my home. We buy (buy: mua) bread, milk, eggs, and sweets there. The shopkeeper (shopkeeper: người bán hàng) knows (knows: biết) my family. He always says hello. My mother pays (pays: trả tiền) for the things, and I carry (carry: mang) the bag. The shop is not big, but it has many useful (useful: hữu ích) things. I like (like: thích) going there with my mother." },
+
+{ title: "63. MY RAINY BOOTS", text: "I wear my blue boots (boots: đôi ủng) when it rains. They keep (keep: giữ) my feet dry. I jump in puddles (puddles: vũng nước) and splash (splash: bắn nước) water. My brother does the same. Our boots are muddy (muddy: dính bùn), but we laugh. My mother says, “Be careful!” We walk slowly. I like (like: thích) my rainy boots because they make rainy days fun." },
+
+{ title: "64. THE RED APPLE", text: "I see (see: thấy) a red apple on the table. It looks (looks: trông có vẻ) shiny (shiny: sáng bóng) and sweet. I wash it and eat it after lunch. My sister wants one too. My mother cuts (cuts: cắt) another apple for her. The apple tastes (tastes: có vị) fresh (fresh: tươi) and good. We both smile. I like (like: thích) apples because they are healthy (healthy: tốt cho sức khỏe) and delicious (delicious: ngon miệng)." },
+
+{ title: "65. MY NEW RULER", text: "I have a new ruler in my pencil case. It is long and green. I use it to draw lines in my book. It is straight (straight: thẳng) and useful (useful: hữu ích). My friend asks to borrow (borrow: mượn) it for a moment (moment: chốc lát). I say yes. The ruler helps me do my work neatly (neatly: gọn gàng). I am happy to use it at school." },
+
+{ title: "66. AT THE RIVER", text: "My family goes to the river on Sunday. The water is calm (calm: êm đềm) and clear (clear: trong veo). We sit under a tree and eat lunch. My brother looks (looks: nhìn) at the fish. My mother takes photos (takes photos: chụp ảnh). A boat passes (passes: đi ngang qua) slowly. The birds sing in the trees. I like (like: thích) the river because it is quiet and beautiful." },
+
+{ title: "67. THE SLEEPY CAT", text: "My cat is sleepy (sleepy: buồn ngủ) in the afternoon. She lies (lies: nằm) on the sofa and closes her eyes. I call her name (name: tên), but she does not move (move: di chuyển). Later, she wakes up and stretches (stretches: vươn vai) her legs. Then she walks to the kitchen for food. My cat sleeps a lot, but I still (still: vẫn) love her very much." },
+
+{ title: "68. MY CLASSROOM WINDOW", text: "I sit near the classroom window. I can see (see: thấy) the trees and the playground. Sometimes I watch (watch: ngắm) birds fly past (past: ngang qua). When the wind is strong, the window moves (moves: di chuyển) a little. My teacher tells (tells: bảo) us to stay quiet and listen (listen: lắng nghe). I like (like: thích) my seat (seat: chỗ ngồi) because I can see (see: thấy) outside and learn in class." },
+
+{ title: "69. THE GREEN BAG", text: "My green bag is small but strong. I carry (carry: mang) it to school every day. It has my books, lunch box, pencil case, and water bottle (bottle: bình). The bag has two pockets and one zip. My mother bought (bought: đã mua) it for me last (last: vừa rồi) month (month: tháng). I like (like: thích) my green bag because it is easy (easy: dễ dàng) to use (use: sử dụng)." },
+
+{ title: "70. A TRIP TO THE PARK", text: "On Saturday, we go to the park. My sister rides her bike. I play on the swing and slide. My father sits on a bench (bench: ghế băng) and reads the newspaper (newspaper: tờ báo). My mother gives us juice. There are dogs, children, and birds in the park. It is a happy place (place: nơi) for family fun." },
+
+{ title: "71. THE LITTLE FROG", text: "I see (see: thấy) a little frog near the pond. It is green and small. It jumps very high and lands (lands: đáp xuống) on a leaf (leaf: lá). I watch (watch: ngắm) it carefully (carefully: cẩn thận). My friend says frogs like (like: thích) water. The frog looks (looks: nhìn) at us and then jumps away. It is a tiny (tiny: tí hon) animal, but it can move (move: di chuyển) fast." },
+
+{ title: "72. MY BREAKFAST", text: "Every morning, I eat breakfast at home. I have bread, eggs, and milk. Sometimes I eat bananas too. My mother makes breakfast for the family. We sit at the table and talk (talk: nói chuyện). Breakfast gives me energy (energy: năng lượng) for school. I think (think: nghĩ) it is the most important (important: quan trọng) meal (meal: bữa ăn) of the day." },
+
+{ title: "73. THE RED KITE", text: "My cousin has a red kite. We fly it in the field (field: cánh đồng) near his house. The wind is good, and the kite goes up high. I hold the string (string: sợi dây) carefully (carefully: cẩn thận). My cousin runs fast. We laugh when the kite turns (turns: quay) in the sky. It is a simple game, but I enjoy (enjoy: thích thú) it a lot." },
+
+{ title: "74. MY LITTLE ROOM", text: "My room is little, but I like (like: thích) it. I have a small bed, a desk, and a chair. There is a lamp (lamp: cái đèn) on the table. My toys are in a box. My clothes (clothes: quần áo) are in the cupboard (cupboard: tủ). At night, I read a book and then sleep. My room is quiet and comfortable (comfortable: thoải mái)." },
+
+{ title: "75. THE LIBRARY", text: "We go to the library after school. There are many books on the shelves (shelves: những cái kệ). I choose (choose: chọn) a book about animals. My friend chooses (chooses: chọn) a story book. We sit quietly and read. The library is a calm (calm: êm đềm) place (place: nơi). I like (like: thích) to borrow (borrow: mượn) books and take them home. Reading makes me happy." },
+
+{ title: "76. THE HAPPY HORSE", text: "A horse lives (lives: sống) on my uncle’s (uncle’s: của chú) farm. It is brown and very strong. My uncle (uncle: chú) brushes (brushes: chải) its hair every morning. I feed (feed: cho ăn) it carrots. Sometimes my uncle (uncle: chú) lets me sit on the horse for a short ride. The horse walks slowly (slowly: chậm rãi) and steadily (steadily: một cách đều đặn). I feel happy when I am near it." },
+
+{ title: "77. MY CLEAN DESK", text: "I clean (clean: làm sạch) my desk after school. I put my pencils in my pencil case and my books on the shelf (shelf: kệ). I throw away old paper and tidy (tidy: dọn dẹp) my notebook. My desk looks (looks: trông có vẻ) nice when it is clean. I can find (find: tìm) everything easily (easily: một cách dễ dàng). I like (like: thích) to study at a clean desk." },
+
+{ title: "78. THE NOISY MONKEY", text: "At the zoo, I see (see: thấy) a monkey in a tree. It makes a loud (loud: ồn ào) noise (noise: tiếng động) and jumps from branch (branch: cành cây) to branch (branch: cành cây). It looks (looks: nhìn) at us and eats a banana. My little sister laughs when the monkey swings. The monkey is funny (funny: vui nhộn) and active (active: năng động). It is one of my favourite animals at the zoo." },
+
+{ title: "79. MY BIRTHDAY CARD", text: "My friend gives me a birthday card. It has a picture (picture: bức tranh) of a cake and balloons. She writes (writes: viết) a kind (kind: tốt bụng) message (message: thông điệp) inside. I put the card on my desk. I smile every time I see (see: thấy) it. Birthday cards are small, but they make people feel happy. I keep my card safely (safely: một cách an toàn)." },
+
+{ title: "80. THE BLUE BOAT", text: "A blue boat is on the lake. A man (man: người đàn ông) rows (rows: chèo) it slowly (slowly: chậm rãi) across the water. The boat is small, but it moves (moves: di chuyển) well. My mother and I sit on the bank (bank: bờ) and watch (watch: ngắm). The water is calm (calm: êm đềm). Birds fly over the lake. I think (think: nghĩ) the blue boat looks (looks: trông có vẻ) very nice." },
+
+{ title: "81. MY MUSIC LESSON", text: "On Fridays, we have a music lesson (lesson: bài học). We sing songs and clap (clap: vỗ tay) our hands. Sometimes we use a small drum. The teacher smiles and helps us. I like (like: thích) music because it is lively (lively: sống động) and fun. My friend plays the tambourine (tambourine: trống lắc tay) very well. We all enjoy (enjoy: thích thú) the lesson (lesson: bài học) and sing loudly (loudly: một cách ồn ào)." },
+
+{ title: "82. THE GARDEN GATE", text: "The garden gate (gate: cái cổng) is white and old. I open it every morning to water the plants. The roses, sunflowers, and grass look fresh after rain. My little brother likes (likes: thích) to push (push: đẩy) the gate (gate: cái cổng) open and closed. It makes a small sound (sound: âm thanh). The garden gate (gate: cái cổng) keeps (keeps: giữ) our garden safe and neat (neat: ngăn nắp)." },
+
+{ title: "83. MY FAVOURITE TOY", text: "My favourite toy is a teddy bear. It is soft and brown. I got it from my grandmother when I was small. I sleep with it every night. Sometimes I take it to school for show and tell. My teddy bear is special (special: đặc biệt) because it makes me feel safe and happy." },
+
+{ title: "84. THE WINDY TREE", text: "The tree outside our house moves (moves: di chuyển) in the wind. Its leaves dance (dance: nhảy múa) and shake (shake: rung lắc). Small birds sit on the branches (branches: cành cây) and sing. I watch (watch: ngắm) the tree from my window. When the wind stops (stops: dừng lại), the tree becomes quiet again. I like (like: thích) looking at the tree because it looks (looks: trông có vẻ) strong and alive (alive: còn sống)." },
+
+{ title: "85. AT THE MARKET STALL", text: "My mother buys (buys: mua) vegetables at a market stall (market stall: quầy hàng ở chợ). There are carrots, onions (onions: những củ hành), tomatoes, and potatoes. The woman at the stall (stall: quầy hàng) is friendly (friendly: thân thiện). She gives my mother some fresh herbs (herbs: rau thơm). I carry (carry: mang) the bag carefully (carefully: cẩn thận). The market is busy and colourful (colourful: đầy màu sắc). I like (like: thích) seeing all the food on the tables." },
+
+{ title: "86. MY NEW PENCIL", text: "I have a new pencil. It is yellow and sharp (sharp: sắc/nhọn). I use it to write (write: viết) in my notebook. It makes clean lines on the paper. My friend asks if she can borrow (borrow: mượn) it. I share (share: chia sẻ) it with her. A pencil is a small thing, but it helps me learn (learn: học) every day." },
+
+{ title: "87. THE LITTLE TURTLE", text: "I see (see: thấy) a little turtle near the pond. It walks slowly (slowly: chậm rãi) and carries (carries: mang) its house (house: mai/nhà) on its back. My brother and I watch (watch: ngắm) it move (move: di chuyển) on the grass. It is not fast, but it is interesting (interesting: thú vị). The turtle stops near the water and goes in. We smile and watch (watch: ngắm) it swim away." },
+
+{ title: "88. MY SCHOOL LUNCH", text: "At school, I eat lunch with my friends. Today I have rice, chicken, and a banana. I drink water from my bottle (bottle: bình). We sit in the shade (shade: bóng râm) and talk (talk: nói chuyện). My lunch is simple (simple: đơn giản), but it tastes (tastes: có vị) good. After lunch, I feel ready (ready: sẵn sàng) to play and study again. Lunch time is a nice part (part: phần) of the day." },
+
+{ title: "89. THE SMALL RAIN BOOTS", text: "My rain boots (rain boots: ủng đi mưa) are small and red. I wear them when the road (road: con đường) is wet. They help me walk through puddles (puddles: vũng nước) without (without: mà không có) wet feet. My sister has yellow boots. We jump and splash (splash: bắn nước) together (together: cùng nhau). Our mother laughs and says we are noisy (noisy: ồn ào). I like (like: thích) my rain boots because they are bright (bright: rực rỡ) and useful (useful: hữu ích)." },
+
+{ title: "90. THE FIRST STAR", text: "At night, I look (look: nhìn) at the sky. I see (see: thấy) one star (star: ngôi sao), then many stars (stars: những ngôi sao). The moon is bright (bright: rực rỡ) and round. My mother says the stars (stars: những ngôi sao) are far (far: xa) away. I stand (stand: đứng) at the window and watch (watch: ngắm) them for a long time (time: thời gian). The night is quiet and beautiful. I like (like: thích) to see (see: thấy) the first star (star: ngôi sao)." },
+
+{ title: "91. MY PENCIL SHARPENER", text: "My pencil sharpener (sharpener: chuốt bút chì) is small and silver (silver: màu bạc). I keep it in my pencil case. When my pencil becomes short, I use the sharpener. It makes the point (point: đầu nhọn) neat (neat: ngăn nắp) again. My friend borrows (borrows: mượn) it sometimes (sometimes: thỉnh thoảng). We take care (care: chăm sóc) of our school things. A sharp pencil helps me write (write: viết) clearly (clearly: một cách rõ ràng) in class." },
+
+{ title: "92. THE PARK BENCH", text: "There is a park bench (bench: ghế băng) under a big tree. My grandfather sits there and reads. My sister and I sit next to (next to: bên cạnh) him and eat biscuits (biscuits: bánh quy). The bench (bench: ghế băng) is old but strong. People rest (rest: nghỉ ngơi) there after walking. I like (like: thích) the bench (bench: ghế băng) because it is a good place (place: nơi) to sit and talk (talk: nói chuyện)." },
+
+{ title: "93. MY WATER BOTTLE", text: "I carry (carry: mang) a water bottle (bottle: bình) in my bag every day. It is blue and has a lid (lid: cái nắp). I drink water at break time (time: thời gian) and after sports. My teacher says water is important (important: quan trọng). I do not like (like: thích) a dry (dry: khô) mouth, so I keep (keep: giữ) my bottle full. It is a small thing, but it helps me a lot." },
+
+{ title: "94. THE LITTLE SHOP CAT", text: "A small cat lives (lives: sống) near the shop. It sleeps on a chair and watches (watches: ngắm) people. The shopkeeper (shopkeeper: người bán hàng) gives it a little milk. Children stop to see (see: thấy) it on the way home. The cat is quiet and friendly. Sometimes (sometimes: thỉnh thoảng) it follows (follows: đi theo) us to the door. I like (like: thích) the shop cat because it is sweet (sweet: ngọt ngào/dễ thương)." },
+
+{ title: "95. MY ART LESSON", text: "In art lesson (lesson: bài học), we paint (paint: vẽ/sơn) and draw (draw: vẽ). Today I draw (draw: vẽ) a house, a tree, and a sun. My friend paints (paints: vẽ/sơn) a bird and a flower. We use red, blue, yellow, and green. Our teacher says, “Good work!” I like (like: thích) art because I can make beautiful (beautiful: đẹp) pictures (pictures: những bức tranh). It is my favourite lesson (lesson: bài học)." },
+
+{ title: "96. THE BROKEN CHAIR", text: "One day, my brother sits on an old chair. The chair breaks (breaks: bị gãy) and makes a loud (loud: ồn ào) sound (sound: âm thanh). He is surprised (surprised: ngạc nhiên), but he is not hurt (hurt: bị thương). My father fixes (fixes: sửa) the chair later. We all laugh when we remember (remember: nhớ) it. The old chair was weak (weak: yếu), so now we use a new one. It was a funny (funny: vui nhộn) day." },
+
+{ title: "97. MY AUNT’S KITCHEN", text: "My aunt has a warm (warm: ấm áp) kitchen. There is a table, a stove (stove: cái bếp), and many bowls (bowls: những cái bát). She cooks (cooks: nấu) soup, rice, and fish. The food smells (smells: có mùi) nice. I help her wash the vegetables. We talk (talk: nói chuyện) and laugh while we work (work: làm việc). My aunt’s kitchen is busy, but I like (like: thích) it because it feels like home." },
+
+{ title: "98. THE RED BALLOON", text: "At the party, I get a red balloon. It is round and light (light: nhẹ). I hold (hold: giữ) it carefully (carefully: cẩn thận) because I do not want (want: muốn) it to fly away. My little cousin also has a balloon. We run in the garden and laugh. The balloon moves (moves: di chuyển) in the air (air: không khí). It makes the party more fun and happy." },
+
+{ title: "99. MY ENGLISH BOOK", text: "My English book is on my desk. I read it every day after school. It has short stories (stories: những câu chuyện), pictures (pictures: những bức tranh), and new words. My teacher says, “Read again.” I try my best. The book helps me learn (learn: học) letters and simple sentences (sentences: những câu). I like (like: thích) my English book because it helps me grow (grow: trưởng thành)." },
+
+{ title: "100. A HAPPY AFTERNOON", text: "This afternoon, I stay at home with my family. My mother makes tea. My father reads a newspaper (newspaper: tờ báo). My sister draws (draws: vẽ) a cat. I finish (finish: hoàn thành) my homework and then play a game. Outside, the birds sing. The house is quiet and warm (warm: ấm áp). It is a happy afternoon, and I enjoy (enjoy: thích thú) every moment (moment: khoảnh khắc)." },
+        ];
+
+        const buttonList = document.getElementById('button-list');
+        const readingBox = document.getElementById('reading-box');
+        const synth = window.speechSynthesis;
+        let preferredVoice = null;
+
+        function setPreferredVoice() {
+            const voices = synth.getVoices();
+            preferredVoice = voices.find(v => v.lang === 'en-US' && (v.name.includes('Google') || v.name.includes('Samantha'))) || 
+                             voices.find(v => v.lang === 'en-US') || 
+                             voices[0];
+        }
+
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = setPreferredVoice;
+        }
+
+        function appendPlainWords(targetContainer, rawString) {
+            const wordFragments = rawString.split(/(\s+)/);
+            wordFragments.forEach(chunk => {
+                if (chunk.trim() === "") {
+                    targetContainer.appendChild(document.createTextNode(chunk));
+                } else {
+                    const normalSpan = document.createElement('span');
+                    normalSpan.className = 'normal-word';
+                    normalSpan.innerText = chunk;
+
+                    const handleNormalAction = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        speak(chunk, normalSpan);
+                    };
+
+                    normalSpan.addEventListener('click', handleNormalAction);
+                    normalSpan.addEventListener('touchend', handleNormalAction);
+                    targetContainer.appendChild(normalSpan);
+                }
+            });
+        }
+
+        function init() {
+            stories.forEach((story, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'story-btn';
+                btn.innerText = story.title;
+                btn.onclick = () => loadStory(index);
+                buttonList.appendChild(btn);
+            });
+            loadStory(0);
+            setPreferredVoice();
+        }
+
+        // Updated Processing: Break the story segments down into clean sentence containers
+        function loadStory(index) {
+            const buttons = document.querySelectorAll('.story-btn');
+            buttons.forEach((btn, i) => btn.classList.toggle('active', i === index));
+
+            readingBox.innerHTML = '';
+            
+            // Split raw story content globally by sentences (. ! ?)
+            const sentences = stories[index].text.split(/(?<=[.!?])\s+/);
+            const segmentRegex = /(\s+)?\(([^)]+)\)/g;
+
+            sentences.forEach(sentenceText => {
+                if (!sentenceText.trim()) return;
+
+                // Make a dedicated row box for each isolated sentence line
+                const sentenceLineDiv = document.createElement('div');
+                sentenceLineDiv.className = 'sentence-line';
+
+                let lastIndex = 0;
+                let match;
+
+                while ((match = segmentRegex.exec(sentenceText)) !== null) {
+                    const normalText = sentenceText.substring(lastIndex, match.index);
+                    const fullBracketContent = match[0].trim();
+                    
+                    const wordsArray = normalText.split(/(\s+)/);
+                    let targetInteractiveWord = "";
+                    let baseTextCutoff = normalText.length;
+
+                    for (let i = wordsArray.length - 1; i >= 0; i--) {
+                        if (wordsArray[i].trim() !== "") {
+                            targetInteractiveWord = wordsArray[i];
+                            let rebuild = "";
+                            for(let j = 0; j < i; j++) {
+                                rebuild += wordsArray[j];
+                            }
+                            baseTextCutoff = rebuild.length;
+                            break;
+                        }
+                    }
+
+                    appendPlainWords(sentenceLineDiv, normalText.substring(0, baseTextCutoff));
+
+                    if (targetInteractiveWord !== "") {
+                        const blockNode = document.createElement('span');
+                        blockNode.className = 'word-node';
+
+                        const interactiveWordSpan = document.createElement('span');
+                        interactiveWordSpan.className = 'interactive-word';
+                        interactiveWordSpan.innerText = targetInteractiveWord;
+
+                        const hintSpan = document.createElement('span');
+                        hintSpan.className = 'viet-hint';
+                        hintSpan.innerText = fullBracketContent;
+
+                        const triggerAction = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            speak(targetInteractiveWord, interactiveWordSpan);
+                            hintSpan.classList.toggle('reveal');
+                        };
+
+                        interactiveWordSpan.addEventListener('click', triggerAction);
+                        interactiveWordSpan.addEventListener('touchend', triggerAction);
+
+                        blockNode.appendChild(interactiveWordSpan);
+                        blockNode.appendChild(hintSpan);
+                        sentenceLineDiv.appendChild(blockNode);
+                    }
+
+                    lastIndex = segmentRegex.lastIndex;
+                }
+
+                appendPlainWords(sentenceLineDiv, sentenceText.substring(lastIndex));
+                readingBox.appendChild(sentenceLineDiv);
+            });
+
+            readingBox.scrollTop = 0;
+        }
+
+        function speak(word, element) {
+            document.querySelectorAll('.normal-word.playing, .interactive-word.playing').forEach(el => el.classList.remove('playing'));
+            synth.cancel();
+
+            const cleanWord = word.replace(/[.,!?;:”’'()]/g, "").trim();
+            const utterance = new SpeechSynthesisUtterance(cleanWord);
+            
+            utterance.rate = 0.70; 
+            utterance.pitch = 1.1;
+            
+            if (preferredVoice) {
+                utterance.voice = preferredVoice;
+            } else {
+                utterance.lang = 'en-US';
+            }
+
+            utterance.onstart = () => element.classList.add('playing');
+            utterance.onend = () => element.classList.remove('playing');
+            
+            synth.speak(utterance);
+        }
+
+        init();
+    </script>
+</body>
+</html>
